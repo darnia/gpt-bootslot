@@ -1,7 +1,5 @@
 TARGET = gpt-bootslot
 LIBS = -lfdisk
-CC = gcc
-CFLAGS = -Os -Wall
 
 .PHONY: default all clean
 
@@ -17,7 +15,7 @@ HEADERS = $(wildcard *.h)
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
+	$(CC) $(OBJECTS) -Wall $(LIBS) $(LDFLAGS) -o $@
 
 clean:
 	-rm -f *.o
