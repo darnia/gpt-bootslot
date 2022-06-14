@@ -20,7 +20,7 @@ const char *root_device() {
   }
 
   dev = S_ISBLK(st.st_mode) ? st.st_rdev : st.st_dev;
-  asprintf(&dev_block_path, "/dev/block/%d:%d", major(dev), minor(dev));
+  asprintf(&dev_block_path, "/dev/block/%d:%d", major(dev), minor(0));
   return dev_block_path;
 }
 
