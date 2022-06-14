@@ -1,5 +1,6 @@
 TARGET = gpt-bootslot
 LIBS = -lfdisk
+PREFIX = /usr
 
 .PHONY: default all clean
 
@@ -16,6 +17,10 @@ HEADERS = $(wildcard *.h)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -Wall $(LIBS) $(LDFLAGS) -o $@
+
+install:
+	-install -d $(DESTDIR)$(PREFIX)/sbin
+	-install -m 0755 $(TARGET) $(DESTDIR)$(PREFIX)/sbin/
 
 clean:
 	-rm -f *.o
