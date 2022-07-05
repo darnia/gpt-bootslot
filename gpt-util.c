@@ -39,31 +39,6 @@ void free_gpt_xbootldr_partition(gpt_xbootldr_partition_t part[MAX_BOOTSLOTS], i
   }
 }
 
-int parse_gpt_attrs(gpt_xbootldr_partition_t *part) {
-  part->boot_successful =
-      ((part->gpt_part_attrs >> GPT_ATTR_BOOT_SUCC_BIT) & 1) == 1;
-  part->tries_remaining =
-      (part->gpt_part_attrs >> GPT_ATTR_BOOT_TRIES_BIT) & 15;
-  part->priority = (part->gpt_part_attrs >> GPT_ATTR_BOOT_PRIORITY_BIT) & 15;
-  return 0;
-}
-
-int set_gpt_attrs(gpt_xbootldr_partition_t *part) {
-  if (part->boot_successful)
-    part->gpt_part_attrs |= ((uint64_t)1) << GPT_ATTR_BOOT_SUCC_BIT;
-  else
-    part->gpt_part_attrs &= ~(((uint64_t)1) << GPT_ATTR_BOOT_SUCC_BIT);
-
-  part->gpt_part_attrs &= ~(((uint64_t)0xF) << GPT_ATTR_BOOT_TRIES_BIT);
-  part->gpt_part_attrs |= ((uint64_t)part->tries_remaining)
-                          << GPT_ATTR_BOOT_TRIES_BIT;
-
-  part->gpt_part_attrs &= ~(((uint64_t)0xF) << GPT_ATTR_BOOT_PRIORITY_BIT);
-  part->gpt_part_attrs |= ((uint64_t)part->priority)
-                          << GPT_ATTR_BOOT_PRIORITY_BIT;
-  return 0;
-}
-
 const char *get_bootslot_name(const char *label) {
   char *bootslot;
 
@@ -90,7 +65,7 @@ int gpt_update_attrs(const char *disk_device, gpt_xbootldr_partition_t *part) {
     goto device_error;
   }
 
-  rc = fdisk_gpt_set_partition_attrs(ctx, part->partno, part->gpt_part_attrs);
+  rc = fdisk_gpt_set_partition_attrs(ctx, part->partno, part->gpt_part_attrs.raw);
   if (rc < 0) {
     fprintf(stderr, "Failed to update attributes on partno %lu\n",
             part->partno);
@@ -118,7 +93,7 @@ int find_boot_partitions(const char *disk_device,
   struct fdisk_partition *pa = NULL;
   struct fdisk_parttype *t = NULL;
   const char *parttype = NULL;
-  uint64_t gpt_part_attrs;
+  gpt_entry_attr_with_guid_attr gpt_part_attrs;
   int partno = 0;
   int index = 0;
   int rc;
@@ -162,7 +137,7 @@ int find_boot_partitions(const char *disk_device,
     // Found an extend boot loader partition (xbootldr)
 
     // Get GPT partition attributes
-    rc = fdisk_gpt_get_partition_attrs(ctx, partno, &gpt_part_attrs);
+    rc = fdisk_gpt_get_partition_attrs(ctx, partno, &gpt_part_attrs.raw);
     if (rc < 0) {
       fprintf(stderr, "Failed to get attributes for GPT partition\n");
       continue;
@@ -175,9 +150,6 @@ int find_boot_partitions(const char *disk_device,
     parts[index].part_type_name = strdup(fdisk_parttype_get_name(t));
     parts[index].bootslot = strdup(get_bootslot_name(parts[index].label));
     parts[index].gpt_part_attrs = gpt_part_attrs;
-
-    // Parse GUID type specific GPT boot attributes (bit 56 - 48)
-    parse_gpt_attrs(&parts[index]);
 
     index++;
     if (index == MAX_BOOTSLOTS)

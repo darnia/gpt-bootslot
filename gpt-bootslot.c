@@ -73,8 +73,8 @@ static int parse_options(int argc, char *argv[]) {
 }
 
 static int cmp_priority(const void *p1, const void *p2) {
-  if (((gpt_xbootldr_partition_t const *)p1)->priority <
-      ((gpt_xbootldr_partition_t const *)p2)->priority) {
+  if (((gpt_xbootldr_partition_t const *)p1)->gpt_part_attrs.fields.boot_priority <
+      ((gpt_xbootldr_partition_t const *)p2)->gpt_part_attrs.fields.boot_priority) {
     return 1;
   } else {
     return -1;
@@ -93,8 +93,8 @@ static int get_primary(int argc, char *argv[], void *userdata) {
     return rc;
 
   for (int i = 0; i < parts_len; i++) {
-    if (priority < parts[i].priority) {
-      priority = parts[i].priority;
+    if (priority < parts[i].gpt_part_attrs.fields.boot_priority) {
+      priority = parts[i].gpt_part_attrs.fields.boot_priority;
       primary = parts[i].bootslot;
     }
   }
@@ -128,18 +128,16 @@ static int set_primary(int argc, char *argv[], void *userdata) {
 
   for (int i = 0; i < parts_len; i++) {
     int is_new_bootslot = !strcmp(primary, parts[i].bootslot);
-    if (i == 0 && is_new_bootslot && parts[i].tries_remaining > 0 &&
-        parts[i].priority == BOOTSLOT_PRIMARY_PRIORITY)
+    if (i == 0 && is_new_bootslot && parts[i].gpt_part_attrs.fields.tries_remaining > 0 &&
+        parts[i].gpt_part_attrs.fields.boot_priority == BOOTSLOT_PRIMARY_PRIORITY)
       break; // Nothing to do
     if (is_new_bootslot) {
-      parts[i].priority = BOOTSLOT_PRIMARY_PRIORITY;
-      parts[i].tries_remaining = 3;
-    } else if (!parts[i].boot_successful && parts[i].priority == 0)
+      parts[i].gpt_part_attrs.fields.boot_priority = BOOTSLOT_PRIMARY_PRIORITY;
+      parts[i].gpt_part_attrs.fields.tries_remaining = 3;
+    } else if (!parts[i].gpt_part_attrs.fields.boot_success && parts[i].gpt_part_attrs.fields.boot_priority == 0)
       continue; // bootslot is marked BAD. Skipping setting priority
     else
-      parts[i].priority = --new_prio;
-
-    set_gpt_attrs(&parts[i]);
+      parts[i].gpt_part_attrs.fields.boot_priority = --new_prio;
 
     rc = gpt_update_attrs(arg_disk_device, &parts[i]);
   }
@@ -163,13 +161,13 @@ static int get_state(int argc, char *argv[], void *userdata) {
   rc = -EINVAL;
   for (int i = 0; i < parts_len; i++) {
     if (!strcmp(bootslot, parts[i].bootslot)) {
-      if (parts[i].priority == 0) {
+      if (parts[i].gpt_part_attrs.fields.boot_priority == 0) {
         printf("bad\n");
         rc = 0;
         break;
-      } else if (parts[i].boot_successful ||
-                 (!parts[i].boot_successful && parts[i].priority > 0 &&
-                  parts[i].tries_remaining > 0)) {
+      } else if (parts[i].gpt_part_attrs.fields.boot_success ||
+                 (!parts[i].gpt_part_attrs.fields.boot_success && parts[i].gpt_part_attrs.fields.boot_priority > 0 &&
+                  parts[i].gpt_part_attrs.fields.tries_remaining > 0)) {
         printf("good\n");
         rc = 0;
         break;
@@ -206,16 +204,12 @@ static int set_state(int argc, char *argv[], void *userdata) {
 
   for (int i = 0; i < parts_len; i++) {
     if (!strcmp(bootslot, parts[i].bootslot)) {
-      parts[i].boot_successful = (new_state == BOOTSLOT_GOOD);
+      parts[i].gpt_part_attrs.fields.boot_success = (new_state == BOOTSLOT_GOOD);
 
       if (new_state == BOOTSLOT_BAD) {
-        parts[i].priority = BOOTSLOT_DISABLE;
-        parts[i].tries_remaining = 0;
+        parts[i].gpt_part_attrs.fields.boot_priority = BOOTSLOT_DISABLE;
+        parts[i].gpt_part_attrs.fields.tries_remaining = 0;
       }
-
-      // fprintf(stderr, "attr: 0x%" PRIx64 "\n", parts[i].gpt_part_attrs);
-      set_gpt_attrs(&parts[i]);
-      // fprintf(stderr, "attr: 0x%" PRIx64 "\n", parts[i].gpt_part_attrs);
 
       rc = gpt_update_attrs(arg_disk_device, &parts[i]);
       break;
@@ -243,9 +237,9 @@ static int show(int argc, char *argv[], void *userdata) {
 
     printf("Bootslot:             %s\n", parts[i].bootslot);
     printf("Boot successful:      %s\n",
-           parts[i].boot_successful ? "true" : "false");
-    printf("Boot tries remaining: %d\n", parts[i].tries_remaining);
-    printf("Boot priority:        %d\n", parts[i].priority);
+           parts[i].gpt_part_attrs.fields.boot_success ? "true" : "false");
+    printf("Boot tries remaining: %d\n", parts[i].gpt_part_attrs.fields.tries_remaining);
+    printf("Boot priority:        %d\n", parts[i].gpt_part_attrs.fields.boot_priority);
   }
   free_gpt_xbootldr_partition(parts, parts_len);
 
