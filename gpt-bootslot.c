@@ -247,7 +247,7 @@ static int show(int argc, char *argv[], void *userdata) {
 }
 
 static int run_command(int argc, char *argv[]) {
-  static const command_t commands[] = {{"show", 0, 0, show},
+  static const command_t commands[] = {{"show", 0, 0, show, CMD_FLAG_DEFAULT},
                                        {"get-state", 1, 1, get_state},
                                        {"set-state", 2, 2, set_state},
                                        {"get-primary", 0, 0, get_primary},
@@ -260,7 +260,6 @@ static int run_command(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
   int rc;
-
   rc = parse_options(argc, argv);
   if (rc <= 0)
     return rc;
