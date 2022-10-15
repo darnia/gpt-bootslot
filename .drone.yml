@@ -1,0 +1,18 @@
+kind: pipeline
+type: docker
+name: build
+
+trigger:
+  event:
+  - push
+  - custom
+  - pull_request
+  - rollback
+
+steps:
+- name: build
+  image: gcc
+  commands:
+  - apt update
+  - apt install -y libfdisk-dev
+  - make
