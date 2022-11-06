@@ -13,6 +13,12 @@ steps:
 - name: build
   image: gcc
   commands:
-  - apt update
-  - apt install -y libfdisk-dev
+  - apt-get update
+  - apt-get install -y libfdisk-dev
   - make
+- name: build with address and leak
+  image: gcc
+  commands:
+  - apt-get update
+  - apt-get install -y libfdisk-dev
+  - CFLAGS="-fsanitize=address -fsanitize=leak -g" LDFLAGS="-fsanitize=address -fsanitize=leak" make
