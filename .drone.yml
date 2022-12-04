@@ -18,6 +18,13 @@ steps:
   - ./uncrustify.sh
   - git diff --exit-code
 
+- name: spell check
+  image: gcc
+  commands:
+  - apt-get update
+  - apt-get install -y codespell
+  - codespell -S ".uncrustify"
+
 - name: build
   image: gcc
   commands:
