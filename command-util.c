@@ -4,66 +4,68 @@
 #include <getopt.h>
 #include <stdio.h>
 
-const command_t *find_command(const char *command, const command_t commands[]) {
-  if (command == NULL) {
-    /* No command, find command flagged as default command */
+const command_t *find_command(const char *command, const command_t commands[])
+{
+    if (command == NULL) {
+        /* No command, find command flagged as default command */
+        for (size_t i = 0; commands[i].dispatch; i++)
+            if (commands[i].flag & CMD_FLAG_DEFAULT)
+                return &commands[i];
+        return NULL;
+    }
+
     for (size_t i = 0; commands[i].dispatch; i++)
-      if (commands[i].flag & CMD_FLAG_DEFAULT)
-        return &commands[i];
+        if (strcmp(command, commands[i].command) == 0)
+            return &commands[i];
+
+    /* At the end of the list. Command not found. */
     return NULL;
-  }
-
-  for (size_t i = 0; commands[i].dispatch; i++)
-    if (strcmp(command, commands[i].command) == 0)
-      return &commands[i];
-
-  /* At the end of the list. Command not found. */
-  return NULL;
 }
 
 int dispatch_command(int argc, char *argv[], const command_t commands[],
-                     void *userdata) {
-  const command_t *command = NULL;
-  const char *command_str = NULL;
-  int left;
+                     void *userdata)
+{
+    const command_t *command = NULL;
+    const char *command_str = NULL;
+    int left;
 
-  assert(commands);
-  assert(commands[0].dispatch);
-  assert(argc >= 0);
-  assert(argv);
-  assert(argc >= optind);
+    assert(commands);
+    assert(commands[0].dispatch);
+    assert(argc >= 0);
+    assert(argv);
+    assert(argc >= optind);
 
-  left = argc - optind;
-  argv += optind;
-  optind = 0;
+    left = argc - optind;
+    argv += optind;
+    optind = 0;
 
-  if (left > 0)
-    command_str = argv[0];
+    if (left > 0)
+        command_str = argv[0];
 
-  command = find_command(command_str, commands);
-  if (!command) {
-    if (command_str)
-      fprintf(stderr, "Unknown command %s.\n", command_str);
-    else
-      fprintf(stderr, "Missing command.\n");
+    command = find_command(command_str, commands);
+    if (!command) {
+        if (command_str)
+            fprintf(stderr, "Unknown command %s.\n", command_str);
+        else
+            fprintf(stderr, "Missing command.\n");
 
-    return -EINVAL;
-  }
+        return -EINVAL;
+    }
 
-  if (left > 0) {
-    left--;
-    argv++;
-  }
+    if (left > 0) {
+        left--;
+        argv++;
+    }
 
-  if ((unsigned)left < command->min_args) {
-    fprintf(stderr, "Too few arguments.\n");
-    return -EINVAL;
-  }
+    if ((unsigned)left < command->min_args) {
+        fprintf(stderr, "Too few arguments.\n");
+        return -EINVAL;
+    }
 
-  if ((unsigned)left > command->max_args) {
-    fprintf(stderr, "Too many arguments.\n");
-    return -EINVAL;
-  }
+    if ((unsigned)left > command->max_args) {
+        fprintf(stderr, "Too many arguments.\n");
+        return -EINVAL;
+    }
 
-  return command->dispatch(left, argv, userdata);
+    return command->dispatch(left, argv, userdata);
 }
