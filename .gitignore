@@ -1,2 +1,6 @@
 *.o
 gpt-bootslot
+
+# Backup files done by uncrustify
+.uncrustify/
+*~

@@ -10,12 +10,21 @@ trigger:
   - rollback
 
 steps:
+- name: uncrustify
+  image: gcc
+  commands:
+  - apt-get update
+  - apt-get install -y cmake
+  - ./uncrustify.sh
+  - git diff --exit-code
+
 - name: build
   image: gcc
   commands:
   - apt-get update
   - apt-get install -y libfdisk-dev
   - make
+
 - name: build with address and leak
   image: gcc
   commands:
