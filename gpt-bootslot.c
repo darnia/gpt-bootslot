@@ -238,7 +238,8 @@ static int show(int argc, char *argv[], void *userdata)
         return rc;
 
     for (int i = 0; i < parts_len; i++) {
-        printf("\nPartno:               %ld\n", parts[i].partno);
+        printf("\n");
+        printf("Partno:               %ld\n", parts[i].partno + 1);
         printf("Part UUID:            %s\n", parts[i].part_uuid);
         printf("Part label:           %s\n", parts[i].label);
         printf("Part type:            %s (%s)\n", parts[i].part_type_name,
